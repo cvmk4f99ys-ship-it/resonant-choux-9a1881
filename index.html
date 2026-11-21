@@ -51,6 +51,32 @@ footer{text-align:center;color:var(--mut);font-size:.85rem;padding:30px 16px 20p
 @keyframes steam{0%{opacity:0;transform:translateY(14px) scaleX(1)}40%{opacity:.8}100%{opacity:0;transform:translateY(-16px) scaleX(1.8)}}
 @keyframes shine{to{background-position:-200% 0}}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,.6),0 8px 26px rgba(0,0,0,.5)}70%{box-shadow:0 0 0 16px rgba(37,211,102,0),0 8px 26px rgba(0,0,0,.5)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0),0 8px 26px rgba(0,0,0,.5)}}
+.side{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.it.sel{border-color:var(--gold);background:#261b12}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:32px;height:32px;border-radius:50%;border:1px solid var(--gold);background:none;color:var(--gold);font:600 1.15rem/1 Inter,sans-serif;cursor:pointer;display:grid;place-items:center;transition:transform .15s}
+.qty button:active{transform:scale(.88)}
+.qty .add{background:var(--gold);color:#1a1008}
+.qty .q{min-width:20px;text-align:center;font-weight:600}
+.it:not(.sel) .mi,.it:not(.sel) .q{display:none}
+#cart{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);max-width:640px;margin:auto;z-index:26;background:var(--card);border:1px solid var(--gold);border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.65);transform:translateY(160%);transition:transform .35s cubic-bezier(.2,.9,.3,1.2);overflow:hidden}
+#cart.show{transform:none}
+body.has-cart .fab{display:none}
+.ch{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:var(--cream);font:inherit;padding:12px 16px;cursor:pointer;text-align:left}
+.ch .ct{flex:1;line-height:1.25}.ch .ct small{display:block;color:var(--mut);font-size:.78rem}
+.ch .tt{font-family:'Playfair Display',Georgia,serif;font-weight:800;font-size:1.35rem;color:var(--gold);white-space:nowrap}
+.ch .ar{color:var(--gold);transition:transform .3s}
+#cart.open .ch .ar{transform:rotate(180deg)}
+.cd{display:none;border-top:1px solid var(--line);padding:10px 16px 14px}
+#cart.open .cd{display:block}
+.cd ul{list-style:none;padding:0;max-height:45vh;overflow-y:auto;display:grid;gap:8px;margin-bottom:12px}
+.cd li{display:flex;align-items:center;gap:10px;font-size:.92rem}
+.cd li span{flex:1}.cd li b{min-width:76px;text-align:right;color:var(--gold);font-weight:600}
+.cd li .qty button{width:28px;height:28px;font-size:1rem}
+.ca{display:flex;gap:8px}
+.ca button,.ca a{flex:1;border-radius:999px;padding:12px;font:600 .92rem Inter,sans-serif;text-align:center;text-decoration:none;cursor:pointer}
+.ca button{background:none;border:1px solid var(--line);color:var(--mut);flex:0 0 auto;padding:12px 18px}
+.ca a{background:#25D366;color:#06260f;border:0}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.it{opacity:1;transform:none}}
 </style></head><body>
 <header class="hero">
@@ -71,6 +97,10 @@ footer{text-align:center;color:var(--mut);font-size:.85rem;padding:30px 16px 20p
 </div>
 <footer class="serif"><em>Toda esquina é um ponto de encontro.</em><br><small style="font-family:Inter,sans-serif">Seja bem-vindo! ♡ · Point da Esquina</small></footer>
 </main>
+<div id="cart" aria-live="polite">
+<button class="ch" type="button" aria-expanded="false"><span style="font-size:1.5rem">🧾</span><span class="ct"><span id="cc">0 itens</span><small>Toque para ver o pedido</small></span><span class="tt" id="ctot">R$ 0,00</span><span class="ar">▲</span></button>
+<div class="cd"><ul id="cl"></ul><div class="ca"><button type="button" id="clr">Limpar</button><a id="send" href="#" target="_blank" rel="noopener">💬 Enviar pedido</a></div></div>
+</div>
 <a class="fab" href="https://wa.me/5561991686238?text=Ol%C3%A1!%20Vim%20pelo%20card%C3%A1pio%20e%20gostaria%20de%20fazer%20um%20pedido." target="_blank" rel="noopener">💬 Fazer pedido</a>
 <script>
 const M=[
@@ -83,15 +113,40 @@ const M=[
 ['adicionais','➕','Adicionais',[['🍳','Ovo','',2],['🧀','Queijo','',2],['🥓','Presunto','',2],['🥩','Carne','',6],['🍗','Frango','',6],['🍫','Nutella','',3]]]
 ];
 const f=n=>'R$ '+n.toFixed(2).replace('.',',');
+const IT={},C={};
+const qb=n=>'<div class="qty"><button type="button" class="mi" aria-label="Remover '+n+'">−</button><span class="q">0</span><button type="button" class="add" aria-label="Adicionar '+n+'">+</button></div>';
 const menu=document.getElementById('menu'),tabs=document.getElementById('tabs');
 M.forEach(([id,ic,t,its])=>{
 const b=document.createElement('button');b.textContent=ic+' '+t;b.dataset.t=id;b.onclick=()=>document.getElementById(id).scrollIntoView();tabs.appendChild(b);
 const s=document.createElement('section');s.id=id;
-s.innerHTML='<h2 class="serif">'+ic+' '+t+'</h2><div class="grid">'+its.map(([e,n,d,p],i)=>'<div class="it" style="transition-delay:'+(i%2)*80+'ms"><div class="em">'+e+'</div><div class="nm">'+n+(d?'<small>'+d+'</small>':'')+'</div><div class="pr">'+f(p)+'</div></div>').join('')+'</div>';
+s.innerHTML='<h2 class="serif">'+ic+' '+t+'</h2><div class="grid">'+its.map(([e,n,d,p],i)=>{const k=id+i;IT[k]={e,n,p};return '<div class="it" data-k="'+k+'" style="transition-delay:'+(i%2)*80+'ms"><div class="em">'+e+'</div><div class="nm">'+n+(d?'<small>'+d+'</small>':'')+'</div><div class="side"><div class="pr">'+f(p)+'</div>'+qb(n)+'</div></div>'}).join('')+'</div>';
 menu.appendChild(s)});
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('v');io.unobserve(e.target)}}),{threshold:.15});
 document.querySelectorAll('.it').forEach(x=>io.observe(x));
 const bs=[...tabs.children];
 const so=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){bs.forEach(b=>b.classList.toggle('on',b.dataset.t===e.target.id));const a=bs.find(b=>b.classList.contains('on'));if(a)tabs.scrollTo({left:a.offsetLeft-20,behavior:'smooth'})}}),{rootMargin:'-30% 0px -65% 0px'});
 document.querySelectorAll('main section').forEach(x=>so.observe(x));
+// Calculadora do pedido
+const cartEl=document.getElementById('cart'),cl=document.getElementById('cl'),WA='5561991686238';
+function setQ(k,q){if(!IT[k])return;q=Math.max(0,Math.min(99,q));if(q)C[k]=q;else delete C[k];upd()}
+function onQty(ev){const b=ev.target.closest('.qty button');if(!b)return;const r=b.closest('[data-k]'),k=r.dataset.k;setQ(k,(C[k]||0)+(b.classList.contains('add')?1:-1))}
+menu.addEventListener('click',onQty);cl.addEventListener('click',onQty);
+cartEl.querySelector('.ch').onclick=()=>{const o=cartEl.classList.toggle('open');cartEl.querySelector('.ch').setAttribute('aria-expanded',o)};
+document.getElementById('clr').onclick=()=>{Object.keys(C).forEach(k=>delete C[k]);upd()};
+function upd(){
+let cents=0,n=0;const ks=Object.keys(C);
+document.querySelectorAll('#menu [data-k]').forEach(el=>{const q=C[el.dataset.k]||0;el.classList.toggle('sel',q>0);el.querySelector('.q').textContent=q});
+cl.innerHTML=ks.map(k=>{const it=IT[k],q=C[k],c=Math.round(it.p*100)*q;cents+=c;n+=q;return '<li data-k="'+k+'"><span>'+it.e+' '+it.n+'</span>'+qb(it.n)+'<b>'+f(c/100)+'</b></li>'}).join('');
+cl.querySelectorAll('.q').forEach((el,i)=>el.textContent=C[ks[i]]);
+const tot=f(cents/100);
+document.getElementById('ctot').textContent=tot;
+document.getElementById('cc').textContent=n+(n===1?' item':' itens');
+cartEl.classList.toggle('show',n>0);document.body.classList.toggle('has-cart',n>0);
+if(!n)cartEl.classList.remove('open');
+const msg='Olá! Vim pelo cardápio e gostaria de fazer um pedido:\n\n'+ks.map(k=>C[k]+'x '+IT[k].n+' — '+f(Math.round(IT[k].p*100)*C[k]/100)).join('\n')+'\n\n*Total: '+tot+'*';
+document.getElementById('send').href='https://wa.me/'+WA+'?text='+encodeURIComponent(msg);
+try{localStorage.setItem('pde-cart',JSON.stringify(C))}catch(e){}
+}
+try{const sv=JSON.parse(localStorage.getItem('pde-cart')||'{}');for(const k in sv)if(IT[k]&&sv[k]>0)C[k]=Math.min(99,sv[k]|0)}catch(e){}
+upd();
 </script></body></html>
